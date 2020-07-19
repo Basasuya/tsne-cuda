@@ -62,8 +62,33 @@ int main(int argc, char** argv) {
         init_type = tsnecuda::TSNE_INIT::GAUSSIAN;
     }
 
+    if(SOPT(data)[0] == '#') {
+        std::string graph_path = SOPT(data);
+        graph_path = graph_path.substr(1, graph_path.size() - 1);
 
-    if (SOPT(data).compare("mnist") == 0) {
+        tsnecuda::Options opt(graph_path);
+        opt.perplexity = FOPT(perplexity);
+        opt.learning_rate = FOPT(learning-rate);
+        opt.early_exaggeration = FOPT(early-ex);
+        opt.iterations = IOPT(num-steps);
+        opt.iterations_no_progress = IOPT(num-steps);
+        opt.magnitude_factor = FOPT(magnitude-factor);
+        opt.initialization = init_type;
+        opt.num_neighbors = IOPT(nearest-neighbors);
+
+        if (BOPT(dump)) {
+            opt.enable_dump("dump_ys.txt", 1);
+        }
+        if (BOPT(viz)) {
+            opt.enable_viz(SOPT(connection));
+        }
+
+        // Do the t-SNE
+        tsnecuda::RunTsne(opt, gpu_opt);
+
+        // Clean up the data
+        delete[] data;
+    } else if (SOPT(data).compare("mnist") == 0) {
 
         // Load the data
         int num_images, num_columns, num_rows;

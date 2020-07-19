@@ -10,9 +10,20 @@
 #define SRC_INCLUDE_OPTIONS_H_
 
 #include <random>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
 #include <time.h>
 
 namespace tsnecuda {
+    struct Edge{
+        int from, to, next;
+        float weight;
+        Edge() {}
+        Edge(int _from, int _to, int _next, float _weight):from(_from), to(_to), next(_next), weight(_weight) {}
+    };
+
     enum TSNE_INIT {
         UNIFORM, GAUSSIAN, RESUME, VECTOR
     };
@@ -33,6 +44,13 @@ namespace tsnecuda {
             bool use_interactive = false;
             std::string viz_server = "tcp://localhost:5556";
             int viz_timeout = 10000;
+
+            bool use_graph_data = false;
+            std::vector<Edge> graph;
+            std::vector<int> head;
+            int n_vertices;
+            int n_edges = 0;
+
 
         public:
             // Point information
@@ -78,9 +96,65 @@ namespace tsnecuda {
             // Random information
             int random_seed = 0;
 
+    private:
+        void add_edge(int v1, int v2, float weight) {
+            graph.push_back(Edge(v1, v2, head[v1], weight)); head[v1] = n_edges ++;
+            graph.push_back(Edge(v2, v1, head[v2], weight)); head[v2] = n_edges ++;
+        }
+        void load_from_graph(std::string& infile){
+            /*
+            vertices(n) edges(m)
+            fromNode_1 toNode_1 weight_1
+            fromNode_2 toNode_2 weight_2
+            ...
+            fromNode_m toNode_m weight_m
+            */    
+            int edgenum, x, y;
+            float weight;
+            std::ifstream fin(infile.c_str());
+            std::string line;
+            if (fin) {
+                std::cout << "Reading graph edges from file: " << infile << std::endl;
+                getline(fin, line);
+                std::istringstream inputstr(line);
+                inputstr >> n_vertices >> edgenum;
+                
+                graph.clear();
+                graph.reserve(edgenum * 2);
+                head.resize(n_vertices + 5, -1);
+                for(int i = 0; i < n_vertices; ++i) {
+                    head[i] = -1;
+                }
+                n_edges = 0;
 
+                for(int i = 0; i < edgenum; i++) {
+                    getline(fin, line);
+                    std::istringstream inputline(line);
+                    inputline >> x >> y >> weight;
+                    add_edge(x, y, weight);
+                    if (n_edges % 5000 == 0) {
+                        std::cout << "\rReading " << n_edges / 1000 << "K edges" << std::flush;
+                    }
+                }
+                std::cout << std::endl;
+            } else {
+                std::cout << "input file not found!" << std::endl;
+                exit(1);
+            }
+            fin.close();
+        }
+    
+    
+    public:
             // Various Constructors
+            
+            
             Options() {}
+            Options(std::string graph_path) {
+                use_graph_data = true;
+                load_from_graph(graph_path);
+                this->random_seed = time(NULL);
+            }
             Options(float* return_data, float* points, int num_points, int num_dims) :
                 return_data(return_data), points(points), num_points(num_points),
                         num_dims(num_dims) {this->random_seed = time(NULL);}
