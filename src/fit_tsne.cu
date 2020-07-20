@@ -93,20 +93,30 @@ void tsnecuda::RunTsne(tsnecuda::Options &opt,
     if (opt.verbosity > 0) {
         std::cout << "done.\nKNN Computation... " << std::flush;
     }
-    // Compute approximate K Nearest Neighbors and squared distances
-    tsnecuda::util::KNearestNeighbors(gpu_opt, knn_indices, knn_squared_distances, high_dim_points, high_dim, num_points, num_neighbors);
-    thrust::device_vector<long> knn_indices_long_device(knn_indices, knn_indices + num_points * num_neighbors);
-    thrust::device_vector<int> knn_indices_device(num_points * num_neighbors);
-    tsnecuda::util::PostprocessNeighborIndices(gpu_opt, knn_indices_device, knn_indices_long_device,
-                                                        num_points, num_neighbors);
 
-    // Max-norm the distances to avoid exponentiating by large numbers
+        
+    // NOTE(basasuya)
+    // only need knn_indices and knn_squared_distances
+    thrust::device_vector<int> knn_indices_device(num_points * num_neighbors);
+
+    if(opt.use_graph_data == false) {
+    // Compute approximate K Nearest Neighbors and squared distances
+        tsnecuda::util::KNearestNeighbors(gpu_opt, knn_indices, knn_squared_distances, high_dim_points, high_dim, num_points, num_neighbors);
+    } else {
+        tsnecuda::util::KNearestNeighbors(opt, knn_indices, knn_squared_distances, num_points, num_neighbors);
+    }
+
+    thrust::device_vector<long> knn_indices_long_device(knn_indices, knn_indices + num_points * num_neighbors);
+        
+    tsnecuda::util::PostprocessNeighborIndices(gpu_opt, knn_indices_device, knn_indices_long_device,
+                                                            num_points, num_neighbors);
     thrust::device_vector<float> knn_squared_distances_device(knn_squared_distances,
-                                            knn_squared_distances + (num_points * num_neighbors));
+        knn_squared_distances + (num_points * num_neighbors));
     tsnecuda::util::MaxNormalizeDeviceVector(knn_squared_distances_device);
 
     END_IL_TIMER(_time_knn);
     START_IL_TIMER();
+
 
     if (opt.verbosity > 0) {
         std::cout << "done.\nComputing Pij matrix... " << std::flush;

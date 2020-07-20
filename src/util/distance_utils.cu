@@ -73,6 +73,36 @@ void tsnecuda::util::PairwiseDistance(cublasHandle_t &handle,
     tsnecuda::util::SqrtDeviceVector(d_distances, d_distances);
 }
 
+void KNearestNeighbors(tsnecuda::Options& opt, int64_t* indices, float* distances, const int num_points,
+    const int num_near_neighbots) {
+    vector<int> & head = opt.head;
+    vector<tsnecuda::Edge>& graph = opt.graph;
+    
+    for(int i = 0; i < num_points; ++i) {
+        std::queue<int> Q;
+        std::map<int, float> mp;
+        Q.push(i);
+        mp[i] = 0;
+        for(int k = 0; k < num_near_neighbors + 1; ++k) {
+            if(Q.empty()) {
+                std::cout << "The graph is not connected ! " << std::flush;
+                exit(0);
+            }
+
+            int x = Q.front(); Q.pop();
+            for(int j = head[x]; ~j; j = graph[j].next) {
+                int to = graph[j].to;
+                if(mp.find(to) != mp.end()) continue;
+                mp[to] = mp[x] + graph[j].weight;
+            }
+            if(k) {
+                indices[k - 1] = x;
+                distances[k - 1] = mp[x];
+            }
+        }
+    }
+}
+
 void tsnecuda::util::KNearestNeighbors(tsnecuda::GpuOptions &gpu_opt,
         int64_t* indices, float* distances,
         const float* const points, const int num_dims,

@@ -45,14 +45,14 @@ namespace tsnecuda {
             std::string viz_server = "tcp://localhost:5556";
             int viz_timeout = 10000;
 
+
+        public:
             bool use_graph_data = false;
             std::vector<Edge> graph;
             std::vector<int> head;
             int n_vertices;
             int n_edges = 0;
-
-
-        public:
+            
             // Point information
             /*NECESSARY*/ float* points = nullptr;
             /*NECESSARY*/ int num_points = 0;
@@ -154,6 +154,7 @@ namespace tsnecuda {
                 use_graph_data = true;
                 load_from_graph(graph_path);
                 this->random_seed = time(NULL);
+                num_points = n_vertices;
             }
             Options(float* return_data, float* points, int num_points, int num_dims) :
                 return_data(return_data), points(points), num_points(num_points),

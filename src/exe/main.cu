@@ -87,7 +87,6 @@ int main(int argc, char** argv) {
         tsnecuda::RunTsne(opt, gpu_opt);
 
         // Clean up the data
-        delete[] data;
     } else if (SOPT(data).compare("mnist") == 0) {
 
         // Load the data

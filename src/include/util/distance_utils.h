@@ -22,6 +22,9 @@
 
 // CXX Includes
 #include <stdint.h>
+#include <queue>
+#include <set>
+#include <map>
 
 // Local Includes
 #include "include/common.h"
@@ -75,6 +78,8 @@ void PairwiseDistance(cublasHandle_t &handle,
         const thrust::device_vector<float> &d_points,
         const int num_points,
         const int num_dims);
+
+void KNearestNeighbors(tsnecuda::Options& opt, int64_t* indices, float* distances);
 
 
 /**
